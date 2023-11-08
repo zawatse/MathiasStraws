@@ -29,12 +29,12 @@ bool isBleConnected = false;
 #define BUTTON_IN_4           GPIO_NUM_27
 #define BUTTON_IN_5           GPIO_NUM_14
 
-#define BUTTON_0_KEY          'a'
-#define BUTTON_1_KEY          'e'
-#define BUTTON_2_KEY          'i'
-#define BUTTON_3_KEY          'o'
-#define BUTTON_4_KEY          'u'
-#define BUTTON_5_KEY          '!'
+#define BUTTON_0_KEY          'a' 
+#define BUTTON_1_KEY          'w'
+#define BUTTON_2_KEY          's'
+#define BUTTON_3_KEY          'd'
+#define BUTTON_4_KEY          'e'
+#define BUTTON_5_KEY          'f'
 
 
 // Forward declarations

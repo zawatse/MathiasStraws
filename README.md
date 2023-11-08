@@ -15,6 +15,8 @@ https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers?tab=downloads
 Use VSCode with PlatformIO installed or another IDE for Microchip booting. Ensure your computer has a USB Serial com port using device manager on windows, or the equivalent on other OS (look at COM6) below:
 ![image](https://github.com/zawatse/MathiasStraws/assets/35353895/ffe3da15-8b3c-4a13-974c-bfbd9149af57)
 
+NOTE: You will need to identify your USB-TO-UART bridge chip, and download the correlating driver for that model chip. The following link was helpful in this process: https://bromleysat.com/installing-drivers-for-the-esp32
+
 If it does not, use the link above to isntall a driver.
 
 TODO: hardware setup instructions for default code configuration

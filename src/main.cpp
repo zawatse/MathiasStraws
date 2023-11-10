@@ -285,9 +285,9 @@ class JoystickStateMachine
 public:
   enum JoystickState
   {
-    LEFT  = -1,
+    RIGHT  = -1,
     OFF   = 0,
-    RIGHT = 1
+    LEFT = 1
   };
 
   JoystickStateMachine(const char keyLeft, const char keyRight) : _state(JoystickState::OFF), _keyLeft(keyLeft), _keyRight(keyRight) {}
@@ -383,10 +383,10 @@ ButtonStateMachine _button4StateMachine(BUTTON_4_KEY);
 ButtonStateMachine _button5StateMachine(BUTTON_5_KEY);
 
 JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY);
-JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_DOWN_KEY, JOYSTICK_Y_O_UP_KEY);
+JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_UP_KEY, JOYSTICK_Y_O_DOWN_KEY);
 
 JoystickStateMachine _joystick1XStateMachine(JOYSTICK_X_1_LEFT_KEY, JOYSTICK_X_1_RIGHT_KEY);
-JoystickStateMachine _joystick1YStateMachine(JOYSTICK_Y_1_DOWN_KEY, JOYSTICK_Y_1_UP_KEY);
+JoystickStateMachine _joystick1YStateMachine(JOYSTICK_Y_1_UP_KEY, JOYSTICK_Y_1_DOWN_KEY);
 
 void setup() {
   // Pin Setup

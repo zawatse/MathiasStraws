@@ -14,11 +14,16 @@ bool isBleConnected = false;
 // Define pressure sensor input pins
 //#define PRESSURE_IN_1       T0 // 4
 
-// Define joystick input pins
+// Define joystick input pins and keys
 // These will be analog input pins reading potentiometer inputs along perpendicular axis, 
 // along with one pin for the joystick button
-#define JOYSTICK_X_IN_0       A0 // 36
-#define JOYSTICK_Y_IN_0       A3 // 39
+#define JOYSTICK_X_IN_0             A0 // 36
+#define JOYSTICK_Y_IN_0             A3 // 39
+#define JOYSTICK_X_O_LEFT_KEY       static_cast<const char>(LEFT_ARROW)
+#define JOYSTICK_X_O_RIGHT_KEY      static_cast<const char>(RIGHT_ARROW)
+#define JOYSTICK_Y_O_UP_KEY         static_cast<const char>(UP_ARROW)
+#define JOYSTICK_Y_O_DOWN_KEY       static_cast<const char>(DOWN_ARROW)
+
 //#define JOYSTICK_BUTTON_IN_0  A6 // 34
 
 // Define button input pins and keys
@@ -213,8 +218,8 @@ class ButtonStateMachine
 public:
   enum ButtonState
   {
-    ON, // 0
-    OFF // 1
+    ON    = 0,
+    OFF   = 1,
   };
 
   ButtonStateMachine(const char key) : _state(ButtonState::OFF), _key(key) {}
@@ -252,9 +257,11 @@ public:
             break;
         }
         break;
-
       default:
         Serial.println("UNEXPECTED STATE");
+        // BUTTON OFF CODE
+        keyPresser.releaseKey(_key);
+        keyPresser.sendPresses();
         _state = OFF;
         break;  
     }
@@ -265,6 +272,101 @@ private:
   const char _key;
 };
 
+// Trinary State Machine for Joystick axis
+class JoystickStateMachine
+{
+public:
+  enum JoystickState
+  {
+    LEFT  = -1,
+    OFF   = 0,
+    RIGHT = 1
+  };
+
+  JoystickStateMachine(const char keyLeft, const char keyRight) : _state(JoystickState::OFF), _keyLeft(keyLeft), _keyRight(keyRight) {}
+  
+  void UpdateState(JoystickState newState)
+  {
+    switch(_state)
+    {
+      case LEFT:
+        switch(newState)
+        {
+          case OFF:
+            keyPresser.releaseKey(_keyLeft);
+            keyPresser.sendPresses();
+            _state = OFF;
+            break;
+
+          case RIGHT:
+            keyPresser.releaseKey(_keyLeft);
+            keyPresser.pressKey(_keyRight);
+            keyPresser.sendPresses();
+            _state = RIGHT;
+            break;
+
+          default:
+            break;
+        }
+        break;
+
+      case RIGHT:
+        switch(newState)
+        {
+          case OFF:
+            keyPresser.releaseKey(_keyRight);
+            keyPresser.sendPresses();
+            _state = OFF;
+            break;
+
+          case LEFT:
+            keyPresser.releaseKey(_keyRight);
+            keyPresser.pressKey(_keyLeft);
+            keyPresser.sendPresses();
+            _state = LEFT;
+            break;
+
+          default:
+            break;
+        }
+        break;
+
+      case OFF:
+        switch(newState)
+        {
+          case RIGHT:
+            keyPresser.pressKey(_keyRight);
+            keyPresser.sendPresses();
+            _state = RIGHT;
+            break;
+
+          case LEFT:
+            keyPresser.pressKey(_keyLeft);
+            keyPresser.sendPresses();
+            _state = LEFT;
+            break;
+
+          default:
+            break;
+        }
+        break;
+
+      default:
+        Serial.println("UNEXPECTED STATE");
+        keyPresser.releaseKey(_keyLeft);
+        keyPresser.releaseKey(_keyRight);
+        keyPresser.sendPresses();
+        _state = OFF;
+        break;  
+    }
+  }
+
+private:
+  JoystickState _state;
+  const char _keyLeft;
+  const char _keyRight;
+};
+
 // Create state machines for inputs
 ButtonStateMachine _button0StateMachine(BUTTON_0_KEY);
 ButtonStateMachine _button1StateMachine(BUTTON_1_KEY);
@@ -272,6 +374,9 @@ ButtonStateMachine _button2StateMachine(BUTTON_2_KEY);
 ButtonStateMachine _button3StateMachine(BUTTON_3_KEY);
 ButtonStateMachine _button4StateMachine(BUTTON_4_KEY);
 ButtonStateMachine _button5StateMachine(BUTTON_5_KEY);
+
+JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY);
+JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_DOWN_KEY, JOYSTICK_Y_O_UP_KEY);
 
 void setup() {
   // Pin Setup
@@ -316,8 +421,8 @@ void loop() {
   //}
 
   // Convert values to states
-  int joyXState = joystickSignalToState(analogRead(JOYSTICK_X_IN_0));
-  int joyYState = joystickSignalToState(analogRead(JOYSTICK_Y_IN_0));
+  _joystick0XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_0))));
+  _joystick0YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_0))));
 
   // Update State Machines, send chars
   _button0StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_0)));

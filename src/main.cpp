@@ -24,6 +24,13 @@ bool isBleConnected = false;
 #define JOYSTICK_Y_O_UP_KEY         static_cast<const char>(UP_ARROW)
 #define JOYSTICK_Y_O_DOWN_KEY       static_cast<const char>(DOWN_ARROW)
 
+#define JOYSTICK_X_IN_1             A6
+#define JOYSTICK_Y_IN_1             A7
+#define JOYSTICK_X_1_LEFT_KEY       'a'
+#define JOYSTICK_X_1_RIGHT_KEY      'd'
+#define JOYSTICK_Y_1_UP_KEY         'w'
+#define JOYSTICK_Y_1_DOWN_KEY       's'
+
 //#define JOYSTICK_BUTTON_IN_0  A6 // 34
 
 // Define button input pins and keys
@@ -34,12 +41,12 @@ bool isBleConnected = false;
 #define BUTTON_IN_4           GPIO_NUM_27
 #define BUTTON_IN_5           GPIO_NUM_14
 
-#define BUTTON_0_KEY          'a' 
-#define BUTTON_1_KEY          'w'
-#define BUTTON_2_KEY          's'
-#define BUTTON_3_KEY          'd'
-#define BUTTON_4_KEY          'e'
-#define BUTTON_5_KEY          'f'
+#define BUTTON_0_KEY          'q' 
+#define BUTTON_1_KEY          'e'
+#define BUTTON_2_KEY          'r'
+#define BUTTON_3_KEY          'f'
+#define BUTTON_4_KEY          'c'
+#define BUTTON_5_KEY          'x'
 
 
 // Forward declarations
@@ -378,6 +385,9 @@ ButtonStateMachine _button5StateMachine(BUTTON_5_KEY);
 JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY);
 JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_DOWN_KEY, JOYSTICK_Y_O_UP_KEY);
 
+JoystickStateMachine _joystick1XStateMachine(JOYSTICK_X_1_LEFT_KEY, JOYSTICK_X_1_RIGHT_KEY);
+JoystickStateMachine _joystick1YStateMachine(JOYSTICK_Y_1_DOWN_KEY, JOYSTICK_Y_1_UP_KEY);
+
 void setup() {
   // Pin Setup
   //
@@ -390,6 +400,9 @@ void setup() {
   //pinMode(PRESSURE_IN_1, INPUT);
   pinMode(JOYSTICK_X_IN_0, INPUT);
   pinMode(JOYSTICK_Y_IN_0, INPUT);
+
+  pinMode(JOYSTICK_X_IN_1, INPUT);
+  pinMode(JOYSTICK_Y_IN_1, INPUT);
   //pinMode(JOYSTICK_BUTTON_IN_0, INPUT_PULLUP);
   pinMode(BUTTON_IN_0, INPUT_PULLUP);
   pinMode(BUTTON_IN_1, INPUT_PULLUP);
@@ -423,6 +436,9 @@ void loop() {
   // Convert values to states
   _joystick0XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_0))));
   _joystick0YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_0))));
+
+  _joystick1XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_1))));
+  _joystick1YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_1))));
 
   // Update State Machines, send chars
   _button0StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_0)));

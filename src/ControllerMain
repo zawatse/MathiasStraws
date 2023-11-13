@@ -1,0 +1,445 @@
+#include <Arduino.h>
+
+// void setup() {
+
+//   //start serial connection
+
+//   Serial.begin(9600);
+
+//   //configure pin 2 as an input and enable the internal pull-up resistor
+
+//   pinMode(GPIO_NUM_32, INPUT_PULLUP);
+
+//   // pinMode(13, OUTPUT);
+
+// }
+
+// void loop() {
+
+//   //read the pushbutton value into a variable
+
+//   int sensorVal = digitalRead(GPIO_NUM_32);
+
+//   //print out the value of the pushbutton
+
+//   Serial.println(sensorVal);
+
+//   // Keep in mind the pull-up means the pushbutton's logic is inverted. It goes
+
+//   // HIGH when it's open, and LOW when it's pressed. Turn on pin 13 when the
+
+//   // button's pressed, and off when it's not:
+
+//   if (sensorVal == HIGH) {
+
+//     // digitalWrite(13, LOW);
+//     // Serial.println("HIGH");
+
+//   } else {
+
+//     // digitalWrite(13, HIGH);
+//     // Serial.println("LOW");
+
+//   }
+// }
+
+#include <BleGamepad.h>
+// #include <FastLED.h>
+
+// CRGB leds[6];
+BleGamepad bleGamepad("Mathias Controller");
+
+
+// #define N1 GPIO_NUM_21
+// #define N2 GPIO_NUM_19
+
+// JOYSTICK
+#define LH A0
+#define LV A3
+#define RH A6
+#define RV A7
+
+
+// // D-PAD
+#define L1 GPIO_NUM_27
+#define L2 GPIO_NUM_14
+#define L3 GPIO_NUM_12
+#define L4 GPIO_NUM_13
+
+#define R1 GPIO_NUM_32
+#define R2 GPIO_NUM_33
+#define R3 GPIO_NUM_25
+#define R4 GPIO_NUM_26
+
+// TRIGGER BUTTONS
+#define LT GPIO_NUM_23
+#define LB GPIO_NUM_21
+#define LS GPIO_NUM_1
+
+#define RT GPIO_NUM_22
+#define RB GPIO_NUM_19
+#define RS GPIO_NUM_3
+// BATTERY VOLTAGE
+// #define ADC 4
+
+// NEOPIXEL
+// #define DATA_PIN 13
+
+// PERIFERALS
+//  #define MIC 25
+//  #define SPEAKER 26
+
+// int buttons[8] = {GPIO_NUM_32, GPIO_NUM_33, GPIO_NUM_25, GPIO_NUM_26, GPIO_NUM_27, GPIO_NUM_14, 17, 16};
+
+int period = 1000;
+unsigned long time_now = 0;
+
+const int numberOfPotSamples = 5;     // Number of pot samples to take (to smooth the values)
+const int delayBetweenSamples = 2;    // Delay in milliseconds between pot samples
+const int delayBetweenHIDReports = 5; // Additional delay in milliseconds between HID reports
+const int debounceDelay = 10;        // Delay in milliseconds between button press
+
+int previousButton1State = 0;
+int previousButton2State = 0;
+int previousButton3State = 0;
+int previousButton4State = 0;
+
+int previousButton5State = 0;
+int previousButton6State = 0;
+int previousButton7State = 0;
+int previousButton8State = 0;
+
+int previousButton9State = 0;
+int previousButton10State = 0;
+int previousButton11State = 0;
+int previousButton12State = 0;
+
+int previousButton13State = 0;
+int previousButton14State = 0;
+
+void setup() {
+  Serial.begin(115200);
+//   FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, 6);
+//   FastLED.setBrightness(64);
+  // for (int i = 0; i < 8; i++) {
+  //   pinMode(buttons[i], INPUT_PULLUP);
+  // }
+
+
+  pinMode(LT, INPUT_PULLUP); //Button
+  pinMode(RT, INPUT_PULLUP); //Button
+  pinMode(LB, INPUT_PULLUP); //Button
+  pinMode(RB, INPUT_PULLUP); //Button
+
+  pinMode(LS, INPUT_PULLUP); //Button
+  pinMode(RS, INPUT_PULLUP); //Button
+  // pinMode(N1, INPUT_PULLUP);
+  // pinMode(N2, INPUT_PULLUP);
+
+  pinMode(R1, INPUT_PULLUP); //Button
+  pinMode(R2, INPUT_PULLUP); //Button
+  pinMode(R3, INPUT_PULLUP); //Button
+  pinMode(R4, INPUT_PULLUP); //Button
+
+  pinMode(L1, INPUT_PULLUP); //Button
+  pinMode(L2, INPUT_PULLUP); //Button
+  pinMode(L3, INPUT_PULLUP); //Button
+  pinMode(L4, INPUT_PULLUP); //Button
+
+  bleGamepad.begin();
+  Serial.println("Starting BLE work!");
+
+}
+
+void loop() {
+  if (bleGamepad.isConnected()) {
+
+    int currentButton1State = digitalRead(R1);
+    int currentButton2State = digitalRead(R2);
+    int currentButton3State = digitalRead(R3);
+    int currentButton4State = digitalRead(R4);
+
+    int currentButton5State = digitalRead(L1);
+    int currentButton6State = digitalRead(L2);
+    int currentButton7State = digitalRead(L3);
+    int currentButton8State = digitalRead(L4);
+
+    int currentButton9State = digitalRead(LT);
+    int currentButton10State = digitalRead(RT);
+    int currentButton11State = digitalRead(LB);
+    int currentButton12State = digitalRead(RB);
+
+    int currentButton13State = digitalRead(LS);
+    int currentButton14State = digitalRead(RS);
+
+    
+    // Serial.println(currentButton1State);
+    // Serial.println(currentButton2State);
+    // Serial.println(currentButton3State);
+    // Serial.println(currentButton4State);
+
+    if (currentButton1State != previousButton1State) {
+      if (currentButton1State == 0)
+        bleGamepad.press(BUTTON_1);
+      else
+        bleGamepad.release(BUTTON_1);
+    }
+    previousButton1State = currentButton1State;
+
+    if (currentButton2State != previousButton2State) {
+      if (currentButton2State == 0)
+        bleGamepad.press(BUTTON_2);
+      else
+        bleGamepad.release(BUTTON_2);
+    }
+    previousButton2State = currentButton2State;
+
+    if (currentButton3State != previousButton3State) {
+      if (currentButton3State == 0)
+        bleGamepad.press(BUTTON_3);
+      else
+        bleGamepad.release(BUTTON_3);
+    }
+    previousButton3State = currentButton3State;
+
+    if (currentButton4State != previousButton4State) {
+      if (currentButton4State == 0)
+        bleGamepad.press(BUTTON_4);
+      else
+        bleGamepad.release(BUTTON_4);
+    }
+    previousButton4State = currentButton4State;
+
+    /////
+    if (currentButton5State != previousButton5State) {
+      if (currentButton5State == 0)
+        bleGamepad.press(BUTTON_5);
+      else
+        bleGamepad.release(BUTTON_5);
+    }
+    previousButton5State = currentButton5State;
+
+    if (currentButton6State != previousButton6State) {
+      if (currentButton6State == 0)
+        bleGamepad.press(BUTTON_6);
+      else
+        bleGamepad.release(BUTTON_6);
+    }
+    previousButton6State = currentButton6State;
+
+    if (currentButton7State != previousButton7State) {
+      if (currentButton7State == 0)
+        bleGamepad.press(BUTTON_7);
+      else
+        bleGamepad.release(BUTTON_7);
+    }
+    previousButton7State = currentButton7State;
+
+    if (currentButton8State != previousButton8State) {
+      if (currentButton8State == 0)
+        bleGamepad.press(BUTTON_8);
+      else
+        bleGamepad.release(BUTTON_8);
+    }
+    previousButton8State = currentButton8State;
+
+    /////
+
+    if (currentButton9State != previousButton9State) {
+      if (currentButton9State == 0)
+        bleGamepad.press(BUTTON_9);
+      else
+        bleGamepad.release(BUTTON_9);
+    }
+    previousButton9State = currentButton9State;
+
+    if (currentButton10State != previousButton10State) {
+      if (currentButton10State == 0)
+        bleGamepad.press(BUTTON_10);
+      else
+        bleGamepad.release(BUTTON_10);
+    }
+    previousButton10State = currentButton10State;
+
+    if (currentButton11State != previousButton11State) {
+      if (currentButton11State == 0)
+        bleGamepad.press(BUTTON_11);
+      else
+        bleGamepad.release(BUTTON_11);
+    }
+    previousButton11State = currentButton11State;
+
+    if (currentButton12State != previousButton12State) {
+      if (currentButton12State == 0)
+        bleGamepad.press(BUTTON_12);
+      else
+        bleGamepad.release(BUTTON_12);
+    }
+    previousButton12State = currentButton12State;
+
+    if (currentButton13State != previousButton13State) {
+      if (currentButton13State == 0)
+        bleGamepad.press(BUTTON_13);
+      else
+        bleGamepad.release(BUTTON_13);
+    }
+    previousButton13State = currentButton13State;
+
+    if (currentButton14State != previousButton14State) {
+      if (currentButton14State == 0)
+        bleGamepad.press(BUTTON_14);
+      else
+        bleGamepad.release(BUTTON_14);
+    }
+    previousButton14State = currentButton14State;
+
+    // if (digitalRead(LS) == 0) {
+    //   Serial.println("Left Joystick");
+    //   bleGamepad.press(BUTTON_6);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_6);
+    // }
+    // if (digitalRead(RS) == 0) {
+    //   Serial.println("Right Joystick");
+    //   bleGamepad.press(BUTTON_3);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_3);
+    // }
+
+    // if (digitalRead(LT) == 0) {
+    //   Serial.println("Left trigger");
+    //   bleGamepad.press(BUTTON_7);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_7);
+    // }
+    // if (digitalRead(RT) == 0) {
+    //   Serial.println("Right trigger");
+    //   bleGamepad.press(BUTTON_8);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_8);
+    // }
+
+    // if (digitalRead(N1) == 0) {
+    //   Serial.println("NEW1");
+    //   bleGamepad.press(BUTTON_7);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_7);
+    // }
+    // if (digitalRead(N2) == 0) {
+    //   Serial.println("New2");
+    //   bleGamepad.press(BUTTON_8);
+    //   delay(debounceDelay);
+    //   bleGamepad.release(BUTTON_8);
+    // }
+
+    
+
+    int potValues[numberOfPotSamples];
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValues[i] = analogRead(LH);
+      delay(delayBetweenSamples);
+    }
+    int potValue = 0;
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValue += potValues[i];
+    }
+    potValue = potValue / numberOfPotSamples;
+    int adjustedValue = map(potValue, 0, 4095, 32767, 0);
+
+
+    int potValues2[numberOfPotSamples];
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValues2[i] = analogRead(LV);
+      delay(delayBetweenSamples);
+    }
+    int potValue2 = 0;
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValue2 += potValues2[i];
+    }
+    potValue2 = potValue2 / numberOfPotSamples;
+    int adjustedValue2 = map(potValue2, 0, 4095, 32767, 0);
+
+
+    int potValues3[numberOfPotSamples];
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValues3[i] = analogRead(RH);
+      delay(delayBetweenSamples);
+    }
+    int potValue3 = 0;
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValue3 += potValues3[i];
+    }
+    potValue3 = potValue3 / numberOfPotSamples;
+    int adjustedValue3 = map(potValue3, 0, 4095, 32767, 0);
+
+
+    int potValues4[numberOfPotSamples];
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValues4[i] = analogRead(RV);
+      delay(delayBetweenSamples);
+    }
+    int potValue4 = 0;
+    for (int i = 0 ; i < numberOfPotSamples ; i++) {
+      potValue4 += potValues4[i];
+    }
+    potValue4 = potValue4 / numberOfPotSamples;
+    int adjustedValue4 = map(potValue4, 0, 4095,  32767, 0);
+
+
+
+
+    
+      // Serial.print(adjustedValue);
+      // Serial.print(" || ");
+      // Serial.print(adjustedValue2);
+      // Serial.print(" || ");
+      // Serial.print(adjustedValue3);
+      // Serial.print(" || ");
+      // Serial.println(adjustedValue4);
+      // Serial.print(" -------- ");
+    
+
+
+    bleGamepad.setAxes(adjustedValue, adjustedValue2, 0, 0, adjustedValue3, adjustedValue4, DPAD_CENTERED);
+    delay(delayBetweenHIDReports);
+
+    //   if (digitalRead(L1) == 0)
+    //     bleGamepad.setAxes(adjustedValue, adjustedValue2, 0, 0, adjustedValue3, adjustedValue4, DPAD_UP);
+    //   if (digitalRead(L2) == 0)
+    //     bleGamepad.setAxes(adjustedValue, adjustedValue2, 0, 0, adjustedValue3, adjustedValue4, DPAD_LEFT);
+    //   if (digitalRead(L3) == 0)
+    //     bleGamepad.setAxes(adjustedValue, adjustedValue2, 0, 0, adjustedValue3, adjustedValue4, DPAD_DOWN);
+    //   if (digitalRead(L4) == 0)
+    //     bleGamepad.setAxes(adjustedValue, adjustedValue2, 0, 0, adjustedValue3, adjustedValue4, DPAD_RIGHT);
+    // }
+
+    }
+}
+
+// void batteryLevel() {
+//   int sensorValue = analogRead(ADC);
+//   float voltage = sensorValue * (5.12 / 4095.0);
+//   Serial.print(voltage);
+//   Serial.print("V ||");
+//   int percentage = (voltage / 4.2) * 100;
+//   Serial.print(percentage);
+//   Serial.println("%");
+//   bleGamepad.setBatteryLevel(percentage);
+//   if (percentage < 60) {
+//     Serial.println("LOW battery");
+//     for (uint8_t i = 30; i < 220; i++) {
+//       for (int j = 0; j < 6; j++) {
+//         leds[j] = CHSV( HUE_RED, 255, i);
+//       }
+//       FastLED.show();
+//       delay(15);
+//     }
+//     for (uint8_t i = 220; i > 30; i--) {
+//       for (int j = 0; j < 6; j++) {
+//         leds[j] = CHSV( HUE_RED, 255, i);
+//       }
+//       FastLED.show();
+//       delay(15);
+//     }
+//   }
+// }

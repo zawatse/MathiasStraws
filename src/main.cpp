@@ -210,8 +210,8 @@ void GamepadOperation()
 
       ProcessJoystickVals(_bleGamepad, RH, RV, LH, LV, _joystickROn, _joystickLOn);
     }
-  Serial.println("GAMEPAD");
-  delay(1000);
+  //Serial.println("GAMEPAD");
+  //delay(1000);
 }
 
 void KeyboardOperation()
@@ -222,8 +222,8 @@ void KeyboardOperation()
     case true:
       _joystick0XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_0))));
       _joystick0YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_0))));
-      Serial.println(analogRead(JOYSTICK_X_IN_0));
-      Serial.println(analogRead(JOYSTICK_Y_IN_0));
+      //Serial.println(analogRead(JOYSTICK_X_IN_0));
+      //Serial.println(analogRead(JOYSTICK_Y_IN_0));
       break;
     default:
       break;
@@ -234,8 +234,8 @@ void KeyboardOperation()
     case true:
       _joystick1XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_1))));
       _joystick1YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_1))));
-      Serial.println(analogRead(JOYSTICK_X_IN_1));
-      Serial.println(analogRead(JOYSTICK_Y_IN_1));
+      //Serial.println(analogRead(JOYSTICK_X_IN_1));
+      //Serial.println(analogRead(JOYSTICK_Y_IN_1));
       break;
     default: 
       break;
@@ -250,14 +250,14 @@ void KeyboardOperation()
   _button5StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_5)));
 
   // Printout for debugger
-  Serial.println(digitalRead(BUTTON_IN_0));
-  Serial.println(digitalRead(BUTTON_IN_1));
-  Serial.println(digitalRead(BUTTON_IN_2));
-  Serial.println(digitalRead(BUTTON_IN_3));
-  Serial.println(digitalRead(BUTTON_IN_4));
-  Serial.println(digitalRead(BUTTON_IN_5));  
-  Serial.println("ENDENDENDEND");
-  delay(500);
+  //Serial.println(digitalRead(BUTTON_IN_0));
+  //Serial.println(digitalRead(BUTTON_IN_1));
+  //Serial.println(digitalRead(BUTTON_IN_2));
+  //Serial.println(digitalRead(BUTTON_IN_3));
+  //Serial.println(digitalRead(BUTTON_IN_4));
+  //Serial.println(digitalRead(BUTTON_IN_5));  
+  //Serial.println("ENDENDENDEND");
+  //delay(500);
 }
 
 // Main loop
@@ -278,7 +278,7 @@ void loop() {
       KeyboardOperation();
       break;
     default:
-      Serial.println("UNEXPECTED");
+      Serial.println("UNEXPECTED DEVICEMODE");
       delay(10000); 
       break; 
   }

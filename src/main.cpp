@@ -1,31 +1,64 @@
 #include <Arduino.h>
-#define US_KEYBOARD
-#include "BLEDevice.h"
-#include "BLEHIDDevice.h"
-#include "HIDTypes.h"
-#include "HIDKeyboardTypes.h"
-#define DEVICE_NAME "Mathias Gamepad"
-void typeText(const char* text);
-bool isBleConnected = false;
+#include <BleGamepad.h>
 
-// Define clock pin, used for pressure sensor
-#define SCK_OUT               SCK // 18
+#include "BLEGamepadHelpers.h"
+#include "BLEKeyboardHelpers.h"
+#include "KeyPressStorage.h"
+#include "SignalToStateHelpers.h"
+#include "StateMachines.h"
 
-// Define pressure sensor input pins
-//#define PRESSURE_IN_1       T0 // 4
+// Define pin to detemrine mode
+// default will be gamepad
+// alternate will be keyboard
+#define MODE_SWITCH                 GPIO_NUM_4
+DeviceModes _deviceMode = DeviceModes::Gamepad;
+#define JOYSTICK_SWITCH_L           GPIO_NUM_18
+#define JOYSTICK_SWITCH_R           GPIO_NUM_17
+bool _joystickLOn = false;
+bool _joystickROn = false;
+
+//
+// GAMEPAD DEFINES
+//
+
+// JOYSTICK
+#define LH A0
+#define LV A3
+#define RH A6
+#define RV A7
+
+// // D-PAD
+#define L1 GPIO_NUM_27
+#define L2 GPIO_NUM_14
+#define L3 GPIO_NUM_12
+#define L4 GPIO_NUM_13
+
+#define R1 GPIO_NUM_32
+#define R2 GPIO_NUM_33
+#define R3 GPIO_NUM_25
+#define R4 GPIO_NUM_26
+
+// TRIGGER BUTTONS
+#define LT GPIO_NUM_23
+#define LB GPIO_NUM_21
+#define LS GPIO_NUM_1
+
+#define RT GPIO_NUM_22
+#define RB GPIO_NUM_19
+#define RS GPIO_NUM_3
 
 // Define joystick input pins and keys
 // These will be analog input pins reading potentiometer inputs along perpendicular axis, 
 // along with one pin for the joystick button
-#define JOYSTICK_X_IN_0             A0 // 36
-#define JOYSTICK_Y_IN_0             A3 // 39
+#define JOYSTICK_X_IN_0             LH
+#define JOYSTICK_Y_IN_0             LV 
 #define JOYSTICK_X_O_LEFT_KEY       static_cast<const char>(LEFT_ARROW)
 #define JOYSTICK_X_O_RIGHT_KEY      static_cast<const char>(RIGHT_ARROW)
 #define JOYSTICK_Y_O_UP_KEY         static_cast<const char>(UP_ARROW)
 #define JOYSTICK_Y_O_DOWN_KEY       static_cast<const char>(DOWN_ARROW)
 
-#define JOYSTICK_X_IN_1             A6
-#define JOYSTICK_Y_IN_1             A7
+#define JOYSTICK_X_IN_1             RH
+#define JOYSTICK_Y_IN_1             RV
 #define JOYSTICK_X_1_LEFT_KEY       'a'
 #define JOYSTICK_X_1_RIGHT_KEY      'd'
 #define JOYSTICK_Y_1_UP_KEY         'w'
@@ -34,12 +67,12 @@ bool isBleConnected = false;
 //#define JOYSTICK_BUTTON_IN_0  A6 // 34
 
 // Define button input pins and keys
-#define BUTTON_IN_0           GPIO_NUM_32
-#define BUTTON_IN_1           GPIO_NUM_33
-#define BUTTON_IN_2           GPIO_NUM_25
-#define BUTTON_IN_3           GPIO_NUM_26
-#define BUTTON_IN_4           GPIO_NUM_27
-#define BUTTON_IN_5           GPIO_NUM_14
+#define BUTTON_IN_0           R1
+#define BUTTON_IN_1           R2
+#define BUTTON_IN_2           R3
+#define BUTTON_IN_3           R4
+#define BUTTON_IN_4           LT
+#define BUTTON_IN_5           RT
 
 #define BUTTON_0_KEY          'q' 
 #define BUTTON_1_KEY          'e'
@@ -48,345 +81,59 @@ bool isBleConnected = false;
 #define BUTTON_4_KEY          'c'
 #define BUTTON_5_KEY          'x'
 
-
-// Forward declarations
-void bluetoothTask(void*);
-int joystickSignalToState(int signal);
-void typeText(const char* text);
-void releaseAllKeys();
-
 //
-// This part of the program lets an ESP32 act as a keyboard connected via Bluetooth.
-// When a button attached to the ESP32 is pressed, it will generate the key strokes for a message.
+// GAMEPAD SETUP
 //
 
-// Message (report) sent when a key is pressed or released
-struct InputReport {
-    uint8_t modifiers;        // bitmask: CTRL = 1, SHIFT = 2, ALT = 4
-    uint8_t reserved;        // must be 0
-    uint8_t pressedKeys[6];  // up to six concurrenlty pressed keys
-};
-// Message (report) received when an LED's state changed
-struct OutputReport {
-    uint8_t leds;            // bitmask: num lock = 1, caps lock = 2, scroll lock = 4, compose = 8, kana = 16
-};
+// Create bluetooth helper objects for gamepad
+BleGamepad _bleGamepad("MathiasController");
 
-BLEHIDDevice* hid;
-BLECharacteristic* input;
-BLECharacteristic* output;
-const InputReport NO_KEY_PRESSED = {};
+GamepadButtonStateMachine _gamepadButton0StateMachine(BUTTON_1, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton1StateMachine(BUTTON_2, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton2StateMachine(BUTTON_3, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton3StateMachine(BUTTON_4, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton4StateMachine(BUTTON_5, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton5StateMachine(BUTTON_6, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton6StateMachine(BUTTON_7, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton7StateMachine(BUTTON_8, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton8StateMachine(BUTTON_9, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton9StateMachine(BUTTON_10, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton10StateMachine(BUTTON_11, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton11StateMachine(BUTTON_12, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton12StateMachine(BUTTON_13, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton13StateMachine(BUTTON_14, &_bleGamepad);
 
-// We require extreme speed and efficiency when pressing, releasing, and sending keystrokes
-// Therefore we are using a bitmap. The keymap that stores the hex representations
-// of each keystroke is simply an array where the index is the casted uint8 value of 
-// any given char. We can take advantage of this by storing these uint8 values into a bitmap,
-// and using the bitmap to create the array of chars and modifiers to send
-class KeyPressStorage
-{
-public:
-  // create a mask for the key and return the map to which the key belongs
-  int getMask(const char key, unsigned long long &mask)
-  {
-    uint8_t val = (uint8_t)key;
-    if (val > KEYMAP_SIZE)
-    {
-      Serial.println("UNKNOWN CHAR");
-      return -1; // character not available on keyboard - skip
-    }
-    mask = 1; 
-    if(val > 127)
-    {
-      val -= 128;
-      mask <<= val;
-      return 2;
-    }
-    else if(val > 63)
-    {
-      val -= 64;
-      mask <<= val;
-      return 1;
-    }
-    else
-    {
-      mask <<= val;
-      return 0;
-    }
-  }
+//
+// KEYBOARD SETUP
+//
 
-  // Sets bit to 1 on the correlating map for the key
-  // using a bitwise OR
-  void pressKey(const char key)
-  {
-    unsigned long long mask = 0;
-    switch(getMask(key, mask))
-    {
-      case 0:
-        _map0 |= mask;
-        break;
-      case 1:
-        _map1 |= mask;
-        break;
-      case 2:
-        _map2 |= mask;
-        break;
-      default:
-        Serial.println("UNKNOWN CHAR PRESS");
-    };
-  }
+// Create bluetooth helper objects for keypad
+BLEHIDDevice *_hid;
+BLECharacteristic *_input;
+BLECharacteristic *_output;
 
-  // Sets bit to 0 on the correlating map for the key
-  // using a bitwise AND with the not of the mask
-  void releaseKey(const char key)
-  {
-    unsigned long long mask = 0;
-    switch(getMask(key, mask))
-    {
-      case 0:
-        _map0 &= ~mask;
-        break;
-      case 1:
-        _map1 &= ~mask;
-        break;
-      case 2:
-        _map2 &= ~mask;
-        break;
-      default:
-        Serial.println("UNKNOWN CHAR RELEASE");
-    };
-  }
-
-  void sendPresses()
-  {
-    uint8_t chars[6] = {};
-    uint8_t modifiers = 0;
-    int pressCounter = 0;
-
-    // populate our KEYMAP array with buttons 
-    unsigned long long temp0 = _map0;
-    unsigned long long temp1 = _map1;
-    unsigned long long temp2 = _map2;
-    for (int i = 0; (i < 64) && (pressCounter < 6); i++)
-    {
-      if(temp0 & 1)
-      {
-        modifiers |= keymap[i].modifier;
-        chars[pressCounter] = keymap[i].usage;
-        pressCounter++;
-      }
-      if((temp1 & 1) && (pressCounter < 6))
-      {
-        modifiers |= keymap[i+64].modifier;
-        chars[pressCounter] = keymap[i+64].usage;
-        pressCounter++;
-      }
-      if((temp2 & 1) && (pressCounter < 6))
-      {
-        modifiers |= keymap[i+128].modifier;
-        chars[pressCounter] = keymap[i+128].usage;
-        pressCounter++;
-      }
-
-      temp0 >>= 1;
-      temp1 >>= 1;
-      temp2 >>= 1;
-    }
-
-    // create input report
-    InputReport report = {
-      .modifiers = modifiers,
-      .reserved = 0,
-      .pressedKeys = {
-        chars[0],
-        chars[1],
-        chars[2],
-        chars[3],
-        chars[4],
-        chars[5]
-      }
-    };
-
-    // send the input report
-    input->setValue((uint8_t*)&report, sizeof(report));
-    input->notify();
-    //delay(5);
-  }
-
-private:
-  unsigned long long _map0 = 0;
-  unsigned long long _map1 = 0;
-  unsigned long long _map2 = 0;
-};
-
-KeyPressStorage keyPresser;
-
-// Binary State Machine for Button
-class ButtonStateMachine
-{
-public:
-  enum ButtonState
-  {
-    ON    = 0,
-    OFF   = 1,
-  };
-
-  ButtonStateMachine(const char key) : _state(ButtonState::OFF), _key(key) {}
-  
-  void UpdateState(ButtonState newState)
-  {
-    switch(newState)
-    {
-      case OFF:
-        switch(_state)
-        {
-          case ON:
-            // BUTTON OFF CODE
-            keyPresser.releaseKey(_key);
-            keyPresser.sendPresses();
-            _state = OFF;
-            break;
-
-          default:
-            break;
-        }
-        break;
-
-      case ON:
-        switch(_state)
-        {
-          case OFF:
-            // BUTTON ON CODE
-            keyPresser.pressKey(_key);
-            keyPresser.sendPresses();
-            _state = ON;
-            break;
-
-          default:
-            break;
-        }
-        break;
-      default:
-        Serial.println("UNEXPECTED STATE");
-        // BUTTON OFF CODE
-        keyPresser.releaseKey(_key);
-        keyPresser.sendPresses();
-        _state = OFF;
-        break;  
-    }
-  }
-
-private:
-  ButtonState _state;
-  const char _key;
-};
-
-// Trinary State Machine for Joystick axis
-class JoystickStateMachine
-{
-public:
-  enum JoystickState
-  {
-    RIGHT  = -1,
-    OFF   = 0,
-    LEFT = 1
-  };
-
-  JoystickStateMachine(const char keyLeft, const char keyRight) : _state(JoystickState::OFF), _keyLeft(keyLeft), _keyRight(keyRight) {}
-  
-  void UpdateState(JoystickState newState)
-  {
-    switch(_state)
-    {
-      case LEFT:
-        switch(newState)
-        {
-          case OFF:
-            keyPresser.releaseKey(_keyLeft);
-            keyPresser.sendPresses();
-            _state = OFF;
-            break;
-
-          case RIGHT:
-            keyPresser.releaseKey(_keyLeft);
-            keyPresser.pressKey(_keyRight);
-            keyPresser.sendPresses();
-            _state = RIGHT;
-            break;
-
-          default:
-            break;
-        }
-        break;
-
-      case RIGHT:
-        switch(newState)
-        {
-          case OFF:
-            keyPresser.releaseKey(_keyRight);
-            keyPresser.sendPresses();
-            _state = OFF;
-            break;
-
-          case LEFT:
-            keyPresser.releaseKey(_keyRight);
-            keyPresser.pressKey(_keyLeft);
-            keyPresser.sendPresses();
-            _state = LEFT;
-            break;
-
-          default:
-            break;
-        }
-        break;
-
-      case OFF:
-        switch(newState)
-        {
-          case RIGHT:
-            keyPresser.pressKey(_keyRight);
-            keyPresser.sendPresses();
-            _state = RIGHT;
-            break;
-
-          case LEFT:
-            keyPresser.pressKey(_keyLeft);
-            keyPresser.sendPresses();
-            _state = LEFT;
-            break;
-
-          default:
-            break;
-        }
-        break;
-
-      default:
-        Serial.println("UNEXPECTED STATE");
-        keyPresser.releaseKey(_keyLeft);
-        keyPresser.releaseKey(_keyRight);
-        keyPresser.sendPresses();
-        _state = OFF;
-        break;  
-    }
-  }
-
-private:
-  JoystickState _state;
-  const char _keyLeft;
-  const char _keyRight;
-};
+//Create keyPresser
+KeyPressStorage _keyPresser(&_input);
 
 // Create state machines for inputs
-ButtonStateMachine _button0StateMachine(BUTTON_0_KEY);
-ButtonStateMachine _button1StateMachine(BUTTON_1_KEY);
-ButtonStateMachine _button2StateMachine(BUTTON_2_KEY);
-ButtonStateMachine _button3StateMachine(BUTTON_3_KEY);
-ButtonStateMachine _button4StateMachine(BUTTON_4_KEY);
-ButtonStateMachine _button5StateMachine(BUTTON_5_KEY);
+ButtonStateMachine _button0StateMachine(BUTTON_0_KEY, &_keyPresser);
+ButtonStateMachine _button1StateMachine(BUTTON_1_KEY, &_keyPresser);
+ButtonStateMachine _button2StateMachine(BUTTON_2_KEY, &_keyPresser);
+ButtonStateMachine _button3StateMachine(BUTTON_3_KEY, &_keyPresser);
+ButtonStateMachine _button4StateMachine(BUTTON_4_KEY, &_keyPresser);
+ButtonStateMachine _button5StateMachine(BUTTON_5_KEY, &_keyPresser);
 
-JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY);
-JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_UP_KEY, JOYSTICK_Y_O_DOWN_KEY);
+JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY, &_keyPresser);
+JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_UP_KEY, JOYSTICK_Y_O_DOWN_KEY, &_keyPresser);
 
-JoystickStateMachine _joystick1XStateMachine(JOYSTICK_X_1_LEFT_KEY, JOYSTICK_X_1_RIGHT_KEY);
-JoystickStateMachine _joystick1YStateMachine(JOYSTICK_Y_1_UP_KEY, JOYSTICK_Y_1_DOWN_KEY);
+JoystickStateMachine _joystick1XStateMachine(JOYSTICK_X_1_LEFT_KEY, JOYSTICK_X_1_RIGHT_KEY, &_keyPresser);
+JoystickStateMachine _joystick1YStateMachine(JOYSTICK_Y_1_UP_KEY, JOYSTICK_Y_1_DOWN_KEY, &_keyPresser);
+
+void bluetoothTask(void*)
+{
+  bluetoothKeyboardSetup(&_hid, &_input, &_output);
+}
+
 
 void setup() {
   // Pin Setup
@@ -396,49 +143,103 @@ void setup() {
   // in pin state, picking up electrical noise from the environment, or capacitively coupling the state of a nearby pin. 
   // 
   // INPUT_PULLUP configures the pin's internal pullup resistor to be activated, making the default value on the pin HIGH
-  //pinMode(SCK_OUT, OUTPUT);
-  //pinMode(PRESSURE_IN_1, INPUT);
-  pinMode(JOYSTICK_X_IN_0, INPUT);
-  pinMode(JOYSTICK_Y_IN_0, INPUT);
+  pinMode(MODE_SWITCH, INPUT_PULLUP);
+  pinMode(JOYSTICK_SWITCH_L, INPUT_PULLUP);
+  pinMode(JOYSTICK_SWITCH_R, INPUT_PULLUP);
 
-  pinMode(JOYSTICK_X_IN_1, INPUT);
-  pinMode(JOYSTICK_Y_IN_1, INPUT);
-  //pinMode(JOYSTICK_BUTTON_IN_0, INPUT_PULLUP);
-  pinMode(BUTTON_IN_0, INPUT_PULLUP);
-  pinMode(BUTTON_IN_1, INPUT_PULLUP);
-  pinMode(BUTTON_IN_2, INPUT_PULLUP);
-  pinMode(BUTTON_IN_3, INPUT_PULLUP);
-  pinMode(BUTTON_IN_4, INPUT_PULLUP);
-  pinMode(BUTTON_IN_5, INPUT_PULLUP);
+  pinMode(R1, INPUT_PULLUP);
+  pinMode(R2, INPUT_PULLUP);
+  pinMode(R3, INPUT_PULLUP);
+  pinMode(R4, INPUT_PULLUP);
+  pinMode(L1, INPUT_PULLUP);
+  pinMode(L2, INPUT_PULLUP);
+  pinMode(L3, INPUT_PULLUP);
+  pinMode(L4, INPUT_PULLUP);
+  pinMode(RT, INPUT_PULLUP);
+  pinMode(RB, INPUT_PULLUP);
+  pinMode(RS, INPUT_PULLUP);
+  pinMode(LT, INPUT_PULLUP);
+  pinMode(LB, INPUT_PULLUP);
+  pinMode(LS, INPUT_PULLUP);
 
-  // Create an Asynch task to initialize bluetooth
-  xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
+  pinMode(LH, INPUT);
+  pinMode(LV, INPUT);
+  pinMode(RH, INPUT);
+  pinMode(RV, INPUT);
+
+  // Detect joystick states
+  // Give time for pullups to turn on
+  // We want default to be off
+  delay(10);
+  _joystickLOn = digitalRead(JOYSTICK_SWITCH_L) == 0;
+  _joystickROn = digitalRead(JOYSTICK_SWITCH_R) == 0;
+  switch(digitalRead(MODE_SWITCH))
+  {
+    case 0:
+      xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
+      _deviceMode = DeviceModes::Keyboard;
+      break;
+    case 1:
+    default:
+      _deviceMode = DeviceModes::Gamepad;
+      _bleGamepad.begin();
+      break;
+  }
 
   // Initialize serial connection with low baud rate for debugging
   Serial.begin(9600);
 }
 
-// Main loop
-// Purpose:
-// Run the clock if needed
-// Read input pins
-// Map values to states
-// Send bluetooth presses
-// PERF TODO: Send presses Asynchronously
-// PERF TODO: Create state machines for buttons 
-void loop() {
-  // Pulse the clock line 3 times to start the next pressure reading for pressure sensors
-  //for (char i = 0; i < 3; i++) {
-  //  digitalWrite(SCK_PIN, HIGH);
-  //  digitalWrite(SCK_PIN, LOW);
-  //}
+void GamepadOperation()
+{
+    if (_bleGamepad.isConnected()) {
+      _gamepadButton0StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(R1)));
+      _gamepadButton1StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(R2)));
+      _gamepadButton2StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(R3)));
+      _gamepadButton3StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(R4)));
+      _gamepadButton4StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(L1)));
+      _gamepadButton5StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(L2)));
+      _gamepadButton6StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(L3)));
+      _gamepadButton7StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(L4)));
+      _gamepadButton8StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LT)));
+      _gamepadButton9StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RT)));
+      _gamepadButton10StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LB)));
+      _gamepadButton11StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RB)));
+      //_gamepadButton12StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LS)));
+      //_gamepadButton13StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RS)));
 
+      ProcessJoystickVals(_bleGamepad, RH, RV, LH, LV, _joystickROn, _joystickLOn);
+    }
+  Serial.println("GAMEPAD");
+  delay(1000);
+}
+
+void KeyboardOperation()
+{
   // Convert values to states
-  _joystick0XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_0))));
-  _joystick0YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_0))));
-
-  _joystick1XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_1))));
-  _joystick1YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_1))));
+  switch(_joystickLOn)
+  {
+    case true:
+      _joystick0XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_0))));
+      _joystick0YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_0))));
+      Serial.println(analogRead(JOYSTICK_X_IN_0));
+      Serial.println(analogRead(JOYSTICK_Y_IN_0));
+      break;
+    default:
+      break;
+  }
+  
+  switch(_joystickROn)
+  {
+    case true:
+      _joystick1XStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_X_IN_1))));
+      _joystick1YStateMachine.UpdateState(static_cast<JoystickStateMachine::JoystickState>(joystickSignalToState(analogRead(JOYSTICK_Y_IN_1))));
+      Serial.println(analogRead(JOYSTICK_X_IN_1));
+      Serial.println(analogRead(JOYSTICK_Y_IN_1));
+      break;
+    default: 
+      break;
+  }
 
   // Update State Machines, send chars
   _button0StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_0)));
@@ -449,194 +250,37 @@ void loop() {
   _button5StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_5)));
 
   // Printout for debugger
-  //Serial.println(analogRead(JOYSTICK_X_IN_0));
-  //Serial.println(analogRead(JOYSTICK_Y_IN_0));
-  //Serial.println(digitalRead(BUTTON_IN_0));
-  //Serial.println(digitalRead(BUTTON_IN_1));
-  //Serial.println(digitalRead(BUTTON_IN_2));
-  //Serial.println(digitalRead(BUTTON_IN_3));
-  //Serial.println(digitalRead(BUTTON_IN_4));
-  //Serial.println(digitalRead(BUTTON_IN_5));  
-  //Serial.println("ENDENDENDEND");
-  //delay(500);
+  Serial.println(digitalRead(BUTTON_IN_0));
+  Serial.println(digitalRead(BUTTON_IN_1));
+  Serial.println(digitalRead(BUTTON_IN_2));
+  Serial.println(digitalRead(BUTTON_IN_3));
+  Serial.println(digitalRead(BUTTON_IN_4));
+  Serial.println(digitalRead(BUTTON_IN_5));  
+  Serial.println("ENDENDENDEND");
+  delay(500);
 }
 
-// Signal to state functions
-
-// 1 == positive pressure (blow)
-// 0 == no input detected
-// -1 == negative pressure (suck)
-int pressureSignalToState(int signal)
-{
-  if (signal > 12582912)
+// Main loop
+// Purpose:
+// Run the clock if needed
+// Read input pins
+// Map values to states
+// Send bluetooth presses
+// PERF TODO: Send presses Asynchronously
+void loop() {
+  // We operate differently based on mode
+  switch(_deviceMode)
   {
-    return 1;
+    case DeviceModes::Gamepad:
+      GamepadOperation();
+      break;
+    case DeviceModes::Keyboard:
+      KeyboardOperation();
+      break;
+    default:
+      Serial.println("UNEXPECTED");
+      delay(10000); 
+      break; 
   }
-  else if (signal < 4194304)
-  {
-    return -1;
-  }
-  return 0;
-}
-
-int joystickSignalToState(int signal)
-{
-  if (signal > 2562)
-  {
-    return 1;
-  }
-  else if(signal < 1536)
-  {
-    return -1;
-  }
-  else return 0;
-}
-
-int buttonSignalToState(int signal)
-{
-  if(signal == 0)
-  {
-    return 1;
-  }
-  return 0;
-}
-
-// Read 24 bit input from pressure sensor
-long readPressurePin(int pin)
-{
-  while (digitalRead(pin)) {}
-
-  // read 24 bits
-  long result = 0;
-  for (int i = 0; i < 24; i++) {
-    digitalWrite(SCK_OUT, HIGH);
-    digitalWrite(SCK_OUT, LOW);
-    result = result << 1;
-    if (digitalRead(pin)) {
-      result++;
-    }
-  }
-
-  // get the 2s compliment
-  result = result ^ 0x800000;
-  return result;
-}
-
-/*
- * Sample program for ESP32 acting as a Bluetooth keyboard
- *
- * Copyright (c) 2019 Manuel Bl
- *
- * Licensed under MIT License
- * https://opensource.org/licenses/MIT
- */
-
-// The report map describes the HID device (a keyboard in this case) and
-// the messages (reports in HID terms) sent and received.
-static const uint8_t REPORT_MAP[] = {
-    USAGE_PAGE(1),      0x01,       // Generic Desktop Controls
-    USAGE(1),           0x06,       // Keyboard
-    COLLECTION(1),      0x01,       // Application
-    REPORT_ID(1),       0x01,       //   Report ID (1)
-    USAGE_PAGE(1),      0x07,       //   Keyboard/Keypad
-    USAGE_MINIMUM(1),   0xE0,       //   Keyboard Left Control
-    USAGE_MAXIMUM(1),   0xE7,       //   Keyboard Right Control
-    LOGICAL_MINIMUM(1), 0x00,       //   Each bit is either 0 or 1
-    LOGICAL_MAXIMUM(1), 0x01,
-    REPORT_COUNT(1),    0x08,       //   8 bits for the modifier keys
-    REPORT_SIZE(1),     0x01,      
-    HIDINPUT(1),        0x02,       //   Data, Var, Abs
-    REPORT_COUNT(1),    0x01,       //   1 byte (unused)
-    REPORT_SIZE(1),     0x08,
-    HIDINPUT(1),        0x01,       //   Const, Array, Abs
-    REPORT_COUNT(1),    0x06,       //   6 bytes (for up to 6 concurrently pressed keys)
-    REPORT_SIZE(1),     0x08,
-    LOGICAL_MINIMUM(1), 0x00,
-    LOGICAL_MAXIMUM(1), 0x65,       //   101 keys
-    USAGE_MINIMUM(1),   0x00,
-    USAGE_MAXIMUM(1),   0x65,
-    HIDINPUT(1),        0x00,       //   Data, Array, Abs
-    REPORT_COUNT(1),    0x05,       //   5 bits (Num lock, Caps lock, Scroll lock, Compose, Kana)
-    REPORT_SIZE(1),     0x01,
-    USAGE_PAGE(1),      0x08,       //   LEDs
-    USAGE_MINIMUM(1),   0x01,       //   Num Lock
-    USAGE_MAXIMUM(1),   0x05,       //   Kana
-    LOGICAL_MINIMUM(1), 0x00,
-    LOGICAL_MAXIMUM(1), 0x01,
-    HIDOUTPUT(1),       0x02,       //   Data, Var, Abs
-    REPORT_COUNT(1),    0x01,       //   3 bits (Padding)
-    REPORT_SIZE(1),     0x03,
-    HIDOUTPUT(1),       0x01,       //   Const, Array, Abs
-    END_COLLECTION(0)               // End application collection
-};
-
-/*
- * Callbacks related to BLE connection
- */
-class BleKeyboardCallbacks : public BLEServerCallbacks{
-    void onConnect(BLEServer* server) {
-        isBleConnected = true;
-        // Allow notifications for characteristics
-        BLE2902* cccDesc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-        cccDesc->setNotifications(true);
-        Serial.println("Client has connected");
-    }
-    void onDisconnect(BLEServer* server) {
-        isBleConnected = false;
-        // Disallow notifications for characteristics
-        BLE2902* cccDesc = (BLE2902*)input->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
-        cccDesc->setNotifications(false);
-        Serial.println("Client has disconnected");
-    }
-};
-/*
- * Called when the client (computer, smart phone) wants to turn on or off
- * the LEDs in the keyboard.
- *
- * bit 0 - NUM LOCK
- * bit 1 - CAPS LOCK
- * bit 2 - SCROLL LOCK
- */
- class OutputCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* characteristic) {
-        OutputReport* report = (OutputReport*) characteristic->getData();
-        //Serial.print("LED state: ");
-        //Serial.print((int) report->leds);
-        //Serial.println();
-    }
- };
-
-void bluetoothTask(void*){
-    // initialize the device
-    BLEDevice::init(DEVICE_NAME);
-    BLEServer* server = BLEDevice::createServer();
-    server->setCallbacks(new BleKeyboardCallbacks());
-    // create an HID device
-    hid = new BLEHIDDevice(server);
-    input = hid->inputReport(1); // report ID
-    output = hid->outputReport(1); // report ID
-    output->setCallbacks(new OutputCallbacks());
-    // set manufacturer name
-    hid->manufacturer()->setValue("Maker Community");
-    // set USB vendor and product ID
-    hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
-    // information about HID device: device is not localized, device can be connected
-    hid->hidInfo(0x00, 0x02);
-    // Security: device requires bonding
-    BLESecurity* security = new BLESecurity();
-    security->setAuthenticationMode(ESP_LE_AUTH_BOND);
-    // set report map
-    hid->reportMap((uint8_t*)REPORT_MAP, sizeof(REPORT_MAP));
-    hid->startServices();
-    // set battery level to 100%
-    hid->setBatteryLevel(100);
-    // advertise the services
-    BLEAdvertising* advertising = server->getAdvertising();
-    advertising->setAppearance(HID_KEYBOARD);
-    advertising->addServiceUUID(hid->hidService()->getUUID());
-    advertising->addServiceUUID(hid->deviceInfo()->getUUID());
-    advertising->addServiceUUID(hid->batteryService()->getUUID());
-    advertising->start();
-    //Serial.println("BLE ready");
-    delay(portMAX_DELAY);
+  delay(5);
 }

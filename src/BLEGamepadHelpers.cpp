@@ -18,6 +18,19 @@ void ProcessJoystickVals(BleGamepad &gamepad, int RH, int RV, int LH, int LV, bo
     potValueRV = potValueRV / numberOfPotSamples;
     potValueLH = potValueLH / numberOfPotSamples;
     potValueLV = potValueLV / numberOfPotSamples;
+
+    if(!RON)
+    {
+        potValueRH = 2048;
+        potValueRV = 2048;
+    }
+
+    if(!LON)
+    {
+        potValueLH = 2048;
+        potValueLV = 2048;
+    }
+
     int adjustedValueRH = map(potValueRH, 0, 4095, 32767, 0);
     int adjustedValueRV = map(potValueRV, 0, 4095, 32767, 0);
     int adjustedValueLH = map(potValueLH, 0, 4095, 32767, 0);

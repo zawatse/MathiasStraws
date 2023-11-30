@@ -186,6 +186,11 @@ void setup() {
       break;
   }
 
+  // turn off pull-up, we dont need it after setup
+  pinMode(MODE_SWITCH, INPUT);
+  pinMode(JOYSTICK_SWITCH_L, INPUT);
+  pinMode(JOYSTICK_SWITCH_R, INPUT);
+
   // Initialize serial connection with low baud rate for debugging
   Serial.begin(9600);
 }

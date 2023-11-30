@@ -22,11 +22,11 @@ int pressureSignalToState(int signal)
 
 int joystickSignalToState(int signal)
 {
-  if (signal > 3072)
+  if (signal > 2562)
   {
     return 1;
   }
-  else if(signal < 2048)
+  else if(signal < 1536)
   {
     return -1;
   }

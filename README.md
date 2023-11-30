@@ -21,6 +21,18 @@ If it does not, use the link above to isntall a driver.
 
 TODO: hardware setup instructions for default code configuration
 
+## KNOWN ISSUES
+
+We use both the h2zero/NimBLE-Arduino lib and the Arduino ESP32 BLE lib, and these are currently incompatible. I've opened an issue with h2zero/NimBLE-Arduino to create a permanent fix, but for now, the workaround is to navigate to your local copy of NimBLE-Arduino\src\NimBLEHIDDevice.h and change the following lines:
+
+#ifndef _BLEHIDDEVICE_H_
+#define _BLEHIDDEVICE_H_
+
+to
+
+#ifndef _NIMBLEHIDDEVICE_H_
+#define _NIMBLEHIDDEVICE_H_
+
 
 
 

@@ -71,15 +71,32 @@ bool _joystickROn = false;
 #define BUTTON_IN_1           R2
 #define BUTTON_IN_2           R3
 #define BUTTON_IN_3           R4
-#define BUTTON_IN_4           LT
-#define BUTTON_IN_5           RT
+#define BUTTON_IN_4           L1
+#define BUTTON_IN_5           L2
+#define BUTTON_IN_6           L3
+#define BUTTON_IN_7           L4
+#define BUTTON_IN_8           LT
+#define BUTTON_IN_9           RT
+#define BUTTON_IN_10          LB
+#define BUTTON_IN_11          RB
+#define BUTTON_IN_12          LS
+#define BUTTON_IN_13          RS
 
 #define BUTTON_0_KEY          'q' 
 #define BUTTON_1_KEY          'e'
 #define BUTTON_2_KEY          'r'
 #define BUTTON_3_KEY          'f'
-#define BUTTON_4_KEY          'c'
-#define BUTTON_5_KEY          'x'
+#define BUTTON_4_KEY          ' '
+#define BUTTON_5_KEY          'c'
+#define BUTTON_6_KEY          'x' 
+#define BUTTON_7_KEY          'g'
+#define BUTTON_8_KEY          'h'
+#define BUTTON_9_KEY          ';'
+#define BUTTON_10_KEY         'A'
+#define BUTTON_11_KEY         '1'
+#define BUTTON_12_KEY         '2' 
+#define BUTTON_13_KEY         '3'
+
 
 //
 // GAMEPAD SETUP
@@ -122,6 +139,14 @@ ButtonStateMachine _button2StateMachine(BUTTON_2_KEY, &_keyPresser);
 ButtonStateMachine _button3StateMachine(BUTTON_3_KEY, &_keyPresser);
 ButtonStateMachine _button4StateMachine(BUTTON_4_KEY, &_keyPresser);
 ButtonStateMachine _button5StateMachine(BUTTON_5_KEY, &_keyPresser);
+ButtonStateMachine _button6StateMachine(BUTTON_6_KEY, &_keyPresser);
+ButtonStateMachine _button7StateMachine(BUTTON_7_KEY, &_keyPresser);
+ButtonStateMachine _button8StateMachine(BUTTON_8_KEY, &_keyPresser);
+ButtonStateMachine _button9StateMachine(BUTTON_9_KEY, &_keyPresser);
+ButtonStateMachine _button10StateMachine(BUTTON_10_KEY, &_keyPresser);
+ButtonStateMachine _button11StateMachine(BUTTON_11_KEY, &_keyPresser);
+ButtonStateMachine _button12StateMachine(BUTTON_12_KEY, &_keyPresser);
+ButtonStateMachine _button13StateMachine(BUTTON_13_KEY, &_keyPresser);
 
 JoystickStateMachine _joystick0XStateMachine(JOYSTICK_X_O_LEFT_KEY, JOYSTICK_X_O_RIGHT_KEY, &_keyPresser);
 JoystickStateMachine _joystick0YStateMachine(JOYSTICK_Y_O_UP_KEY, JOYSTICK_Y_O_DOWN_KEY, &_keyPresser);
@@ -253,6 +278,14 @@ void KeyboardOperation()
   _button3StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_3)));
   _button4StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_4)));
   _button5StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_5)));
+  _button6StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_6)));
+  _button7StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_7)));
+  _button8StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_8)));
+  _button9StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_9)));
+  _button10StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_10)));
+  _button11StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_11)));
+  _button12StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_12)));
+  _button13StateMachine.UpdateState(static_cast<ButtonStateMachine::ButtonState>(digitalRead(BUTTON_IN_13)));
 
   // Printout for debugger
   //Serial.println(digitalRead(BUTTON_IN_0));

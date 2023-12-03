@@ -1,7 +1,7 @@
 # MathiasStraws
 
 ## OVERVIEW:
-The intention of this project is to create a bluetooth keyboard emulator that will serve as a gaming device for Mathias, a 14 year old boy and recent quadruple amputee. The project is intended for an ESP32 WROOM microcontroller. 
+The intention of this project is to create a bluetooth keyboard/gamepad emulator that will serve as a gaming device for Mathias, a 14 year old boy and recent quadruple amputee. The project is intended for an ESP32 WROOM microcontroller. 
 
 ## RESOURCES:
 pinouts:

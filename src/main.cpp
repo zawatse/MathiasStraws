@@ -10,12 +10,9 @@
 // Define pin to detemrine mode
 // default will be gamepad
 // alternate will be keyboard
-#define MODE_SWITCH                 GPIO_NUM_4
 DeviceModes _deviceMode = DeviceModes::Gamepad;
-#define JOYSTICK_SWITCH_L           GPIO_NUM_18
-#define JOYSTICK_SWITCH_R           GPIO_NUM_17
-bool _joystickLOn = false;
-bool _joystickROn = false;
+bool _joystickLOn = true;
+bool _joystickROn = true;
 
 //
 // GAMEPAD DEFINES
@@ -209,10 +206,6 @@ void setup() {
   // Give time for pullups to turn on
   // We want default to be off
   delay(10);
-  _joystickLOn = true;
-  _joystickROn = true;
-
-  _deviceMode = DeviceModes::Gamepad;
   _bleGamepad.begin();
 
   // Initialize serial connection with low baud rate for debugging

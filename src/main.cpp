@@ -47,6 +47,13 @@ bool _joystickROn = false;
 #define RB GPIO_NUM_19
 #define RS GPIO_NUM_3
 
+// EXTRA BUTTONS
+#define E1 GPIO_NUM_18
+#define E2 GPIO_NUM_5
+#define E3 GPIO_NUM_17
+#define E4 GPIO_NUM_16
+
+
 // Define joystick input pins and keys
 // These will be analog input pins reading potentiometer inputs along perpendicular axis, 
 // along with one pin for the joystick button
@@ -119,6 +126,11 @@ GamepadButtonStateMachine _gamepadButton10StateMachine(BUTTON_11, &_bleGamepad);
 GamepadButtonStateMachine _gamepadButton11StateMachine(BUTTON_12, &_bleGamepad);
 GamepadButtonStateMachine _gamepadButton12StateMachine(BUTTON_13, &_bleGamepad);
 GamepadButtonStateMachine _gamepadButton13StateMachine(BUTTON_14, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton14StateMachine(BUTTON_15, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton15StateMachine(BUTTON_16, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton16StateMachine(BUTTON_17, &_bleGamepad);
+GamepadButtonStateMachine _gamepadButton17StateMachine(BUTTON_18, &_bleGamepad);
+
 
 //
 // KEYBOARD SETUP
@@ -168,9 +180,6 @@ void setup() {
   // in pin state, picking up electrical noise from the environment, or capacitively coupling the state of a nearby pin. 
   // 
   // INPUT_PULLUP configures the pin's internal pullup resistor to be activated, making the default value on the pin HIGH
-  pinMode(MODE_SWITCH, INPUT_PULLUP);
-  pinMode(JOYSTICK_SWITCH_L, INPUT_PULLUP);
-  pinMode(JOYSTICK_SWITCH_R, INPUT_PULLUP);
 
   pinMode(R1, INPUT_PULLUP);
   pinMode(R2, INPUT_PULLUP);
@@ -186,6 +195,10 @@ void setup() {
   pinMode(LT, INPUT_PULLUP);
   pinMode(LB, INPUT_PULLUP);
   pinMode(LS, INPUT_PULLUP);
+  pinMode(E1, INPUT_PULLUP);
+  pinMode(E2, INPUT_PULLUP);
+  pinMode(E3, INPUT_PULLUP);
+  pinMode(E4, INPUT_PULLUP);
 
   pinMode(LH, INPUT);
   pinMode(LV, INPUT);
@@ -196,25 +209,11 @@ void setup() {
   // Give time for pullups to turn on
   // We want default to be off
   delay(10);
-  _joystickLOn = digitalRead(JOYSTICK_SWITCH_L) == 0;
-  _joystickROn = digitalRead(JOYSTICK_SWITCH_R) == 0;
-  switch(digitalRead(MODE_SWITCH))
-  {
-    case 0:
-      xTaskCreate(bluetoothTask, "bluetooth", 20000, NULL, 5, NULL);
-      _deviceMode = DeviceModes::Keyboard;
-      break;
-    case 1:
-    default:
-      _deviceMode = DeviceModes::Gamepad;
-      _bleGamepad.begin();
-      break;
-  }
+  _joystickLOn = true;
+  _joystickROn = true;
 
-  // turn off pull-up, we dont need it after setup
-  pinMode(MODE_SWITCH, INPUT);
-  pinMode(JOYSTICK_SWITCH_L, INPUT);
-  pinMode(JOYSTICK_SWITCH_R, INPUT);
+  _deviceMode = DeviceModes::Gamepad;
+  _bleGamepad.begin();
 
   // Initialize serial connection with low baud rate for debugging
   Serial.begin(9600);
@@ -235,8 +234,12 @@ void GamepadOperation()
       _gamepadButton9StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RT)));
       _gamepadButton10StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LB)));
       _gamepadButton11StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RB)));
-      //_gamepadButton12StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LS)));
-      //_gamepadButton13StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RS)));
+      _gamepadButton12StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(LS)));
+      _gamepadButton13StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(RS)));
+      _gamepadButton14StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E1)));
+      _gamepadButton15StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E2)));
+      _gamepadButton16StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E3)));
+      _gamepadButton17StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E4)));
 
       ProcessJoystickVals(_bleGamepad, RH, RV, LH, LV, _joystickROn, _joystickLOn);
     }

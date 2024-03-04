@@ -13,6 +13,11 @@
 DeviceModes _deviceMode = DeviceModes::Gamepad;
 bool _joystickLOn = true;
 bool _joystickROn = true;
+int _JOYSTICK_X_0_INIT_POS = 0;
+int _JOYSTICK_Y_0_INIT_POS = 0;
+int _JOYSTICK_X_1_INIT_POS = 0;
+int _JOYSTICK_Y_1_INIT_POS = 0;
+
 
 //
 // GAMEPAD DEFINES
@@ -208,8 +213,15 @@ void setup() {
   delay(10);
   _bleGamepad.begin();
 
+  // do potentiometer offset detection
+  auto [JOYSTICK_X_0_INIT_POS, JOYSTICK_Y_0_INIT_POS, JOYSTICK_X_1_INIT_POS, JOYSTICK_Y_1_INIT_POS] = ReadJoystickVals(RH, RV, LH, LV, _joystickROn, _joystickLOn);
+  _JOYSTICK_X_0_INIT_POS = JOYSTICK_X_0_INIT_POS;
+  _JOYSTICK_Y_0_INIT_POS = JOYSTICK_Y_0_INIT_POS;
+  _JOYSTICK_X_1_INIT_POS = JOYSTICK_X_1_INIT_POS;
+  _JOYSTICK_Y_1_INIT_POS = JOYSTICK_Y_1_INIT_POS;
+  
   // Initialize serial connection with low baud rate for debugging
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void GamepadOperation()
@@ -233,8 +245,18 @@ void GamepadOperation()
       _gamepadButton15StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E2)));
       _gamepadButton16StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E3)));
       _gamepadButton17StateMachine.UpdateState(static_cast<GamepadButtonStateMachine::ButtonState>(digitalRead(E4)));
-
-      ProcessJoystickVals(_bleGamepad, RH, RV, LH, LV, _joystickROn, _joystickLOn);
+      ProcessJoystickVals(
+        _bleGamepad, 
+        RH, 
+        RV,
+        LH, 
+        LV, 
+        _JOYSTICK_X_0_INIT_POS, 
+        _JOYSTICK_Y_0_INIT_POS, 
+        _JOYSTICK_X_1_INIT_POS, 
+        _JOYSTICK_Y_1_INIT_POS, 
+        _joystickROn, 
+        _joystickLOn);
     }
   //Serial.println("GAMEPAD");
   //delay(1000);
